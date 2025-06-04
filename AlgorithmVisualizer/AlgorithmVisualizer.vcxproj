@@ -138,7 +138,21 @@
     <ClCompile Include="..\vendor\src\imgui_impl_opengl3.cpp" />
     <ClCompile Include="..\vendor\src\imgui_tables.cpp" />
     <ClCompile Include="..\vendor\src\imgui_widgets.cpp" />
+    <ClCompile Include="Algorithm.cpp" />
     <ClCompile Include="AlgorithmVisualizer.cpp" />
+    <ClCompile Include="ArrayGenerator.cpp" />
+    <ClCompile Include="BubbleSort.cpp" />
+    <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="SortingStats.cpp" />
+    <ClCompile Include="VisualizationData.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Algorithm.h" />
+    <ClInclude Include="ArrayGenerator.h" />
+    <ClInclude Include="BubbleSort.h" />
+    <ClInclude Include="Renderer.h" />
+    <ClInclude Include="SortingStats.h" />
+    <ClInclude Include="VisualizationData.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
