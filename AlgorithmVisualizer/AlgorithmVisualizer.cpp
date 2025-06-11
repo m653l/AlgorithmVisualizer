@@ -128,7 +128,7 @@ int main()
 
 		if (sortingStats2.isSorting && !sortingThread2.joinable()) {
 			insertionSort.step(visualizationData2, sortingStats2);
-			std::this_thread::sleep_for(std::chrono::milliseconds(50));
+			std::this_thread::sleep_for(std::chrono::milliseconds(sortingStats2.speedFactor));
 		}
 
 		renderer.renderStatistics(sortingStats2, visualizationData2.size());

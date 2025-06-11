@@ -17,23 +17,30 @@ namespace Algorithms {
 
         data.resetHighlighting();
 
-        for (i = 1; i < n; i++) {
-            array[i].isComparing = true;
+        if (i >= n) {
+            stats.sortingComplete = true;
+            stats.isSorting = false;
+            return;
+        }
 
+        if (j == i - 1) {
+            array[i].isComparing = true;
             temp = array[i].value;
             j = i - 1;
-            // Przesuwanie elementów wiêkszych od temp, aby zrobiæ miejsce dla temp
-            while (j >= 0 && array[j].value > temp) {
-                array[j].isComparing = true;
-                array[j].isSwapping = true;
-                array[j+1].isSwapping = true;
-                stats.comparisons++;
-                stats.currentStep++;
-                array[j + 1] = array[j];
-                j--;
-            }
-            // Wstawienie temp na odpowiednie miejsce w posortowanej czêœci tablicy
+            i++;
+        }
+
+        if (j >= 0 && array[j].value > temp) {
+            array[j].isComparing = true;
+            array[j].isSwapping = true;
+            array[j + 1].isSwapping = true;
+            stats.comparisons++;
+            stats.currentStep++;
+            array[j + 1] = array[j];
+            j--;
+        } else {
             array[j + 1].value = temp;
+            j = i - 1;
         }
 
     }
@@ -45,7 +52,7 @@ namespace Algorithms {
 
         while (stats.isSorting && !stats.sortingComplete) {
             step(data, stats);
-            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            std::this_thread::sleep_for(std::chrono::milliseconds(stats.speedFactor));
         }
 
         data.resetHighlighting();
