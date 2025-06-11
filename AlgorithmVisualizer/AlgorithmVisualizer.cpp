@@ -137,6 +137,9 @@ int main()
 			sortingStats.steppingMode = true;
 			bubbleSort.step(visualizationData, sortingStats);
 			sortingStats.steppingMode = previousSteppingMode;
+			
+			// Ensure we stop after one step in stepping mode
+			sortingStats.isSorting = false;
 		}
 		// Handle single-step execution when not in stepping mode
 		else if (sortingStats.isSorting && !sortingThread.joinable()) {
@@ -153,6 +156,25 @@ int main()
 
 		bool generateNewArray2 = renderer2.renderControls(visualizationData2, sortingStats2, arraySize2);
 
+		// Handle mode switching while sorting is in progress
+		static bool prevSteppingMode2 = sortingStats2.steppingMode;
+		
+		// If we just switched to stepping mode while sorting was in progress,
+		// we need to stop the sorting thread and continue in stepping mode
+		if (sortingStats2.steppingMode && !prevSteppingMode2 && sortingStats2.isSorting && sortingThread2.joinable()) {
+			sortingStats2.isSorting = false;
+			sortingThread2.join();
+			sortingStats2.isSorting = true;
+		}
+		// If we just switched from stepping mode to continuous mode,
+		// we don't automatically start sorting - user needs to click Resume
+		else if (!sortingStats2.steppingMode && prevSteppingMode2 && sortingStats2.currentStep > 0) {
+			sortingStats2.isSorting = false;
+		}
+		
+		// Update previous stepping mode for next frame
+		prevSteppingMode2 = sortingStats2.steppingMode;
+
 		if (generateNewArray2) {
 			Utils::ArrayGenerator::generateRandomArray(visualizationData2);
 			sortingStats2.reset();
@@ -163,12 +185,38 @@ int main()
 			sortingThread2.join();
 		}
 
-		if (sortingStats2.isSorting && !sortingThread2.joinable()) {
-			sortingThread2 = std::thread(&Algorithms::InsertionSort::run, &insertionSort,
-				std::ref(visualizationData2), std::ref(sortingStats2));
+		// Handle continuous sorting (non-stepping mode)
+		if (sortingStats2.isSorting && !sortingStats2.steppingMode && !sortingThread2.joinable()) {
+			// If we have a current step, continue from where we left off rather than starting a new run
+			if (sortingStats2.currentStep > 0) {
+				sortingThread2 = std::thread([&insertionSort, &visualizationData2, &sortingStats2]() {
+					// Continue sorting from current state
+					while (sortingStats2.isSorting && !sortingStats2.sortingComplete) {
+						insertionSort.step(visualizationData2, sortingStats2);
+						std::this_thread::sleep_for(std::chrono::milliseconds(sortingStats2.speedFactor));
+					}
+					
+					visualizationData2.resetHighlighting();
+					sortingStats2.isSorting = false;
+				});
+			} else {
+				sortingThread2 = std::thread(&Algorithms::InsertionSort::run, &insertionSort,
+					std::ref(visualizationData2), std::ref(sortingStats2));
+			}
 		}
 
-		if (sortingStats2.isSorting && !sortingThread2.joinable()) {
+		// Handle step-by-step execution
+		if (sortingStats2.isSorting && sortingStats2.steppingMode) {
+			bool previousSteppingMode = sortingStats2.steppingMode;
+			sortingStats2.steppingMode = true;
+			insertionSort.step(visualizationData2, sortingStats2);
+			sortingStats2.steppingMode = previousSteppingMode;
+			
+			// Ensure we stop after one step in stepping mode
+			sortingStats2.isSorting = false;
+		}
+		// Handle single-step execution when not in stepping mode
+		else if (sortingStats2.isSorting && !sortingThread2.joinable()) {
 			insertionSort.step(visualizationData2, sortingStats2);
 			std::this_thread::sleep_for(std::chrono::milliseconds(sortingStats2.speedFactor));
 		}
