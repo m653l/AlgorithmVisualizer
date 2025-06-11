@@ -17,6 +17,11 @@ namespace Algorithms {
         int n = array.size();
 
         data.resetHighlighting();
+        
+        // Save current state before making changes (for step backward functionality)
+        if (stats.steppingMode) {
+            stats.saveState(data, i, j, swapped);
+        }
 
         if (i < n - 1) {
             if (j < n - i - 1) {
@@ -51,6 +56,11 @@ namespace Algorithms {
             stats.sortingComplete = true;
             stats.isSorting = false;
         }
+        
+        // If in stepping mode, pause after each step
+        if (stats.steppingMode) {
+            stats.isSorting = false;
+        }
     }
 
     void BubbleSort::run(Visualization::VisualizationData& data, SortingStats& stats) {
@@ -58,6 +68,13 @@ namespace Algorithms {
         stats.reset();
         stats.isSorting = true;
 
+        // If in stepping mode, we'll only do one step at a time
+        if (stats.steppingMode) {
+            step(data, stats);
+            return;
+        }
+
+        // Normal continuous execution
         while (stats.isSorting && !stats.sortingComplete) {
             step(data, stats);
             std::this_thread::sleep_for(std::chrono::milliseconds(stats.speedFactor));

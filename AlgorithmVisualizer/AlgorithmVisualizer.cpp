@@ -80,12 +80,19 @@ int main()
 			sortingThread.join();
 		}
 
-		if (sortingStats.isSorting && !sortingThread.joinable()) {
+		// Handle continuous sorting (non-stepping mode)
+		if (sortingStats.isSorting && !sortingStats.steppingMode && !sortingThread.joinable()) {
 			sortingThread = std::thread(&Algorithms::BubbleSort::run, &bubbleSort,
 				std::ref(visualizationData), std::ref(sortingStats));
 		}
 
-		if (sortingStats.isSorting && !sortingThread.joinable()) {
+		// Handle step-by-step execution
+		if (sortingStats.isSorting && sortingStats.steppingMode) {
+			bubbleSort.step(visualizationData, sortingStats);
+			// No sleep needed here as we're manually stepping
+		}
+		// Handle single-step execution when not in stepping mode
+		else if (sortingStats.isSorting && !sortingThread.joinable()) {
 			bubbleSort.step(visualizationData, sortingStats);
 			std::this_thread::sleep_for(std::chrono::milliseconds(sortingStats.speedFactor));
 		}

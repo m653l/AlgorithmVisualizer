@@ -27,6 +27,22 @@ namespace Rendering {
         ImGui::Text("Execution Speed");
         ImGui::SliderInt("Delay (ms)", &stats.speedFactor, 1, 500, "%d ms");
 
+        // Execution mode checkbox
+        if (!stats.isSorting && !stats.sortingComplete) {
+            ImGui::Checkbox("Step-by-Step Mode", &stats.steppingMode);
+            if (stats.steppingMode) {
+                ImGui::SameLine();
+                ImGui::TextDisabled("(?)");
+                if (ImGui::IsItemHovered()) {
+                    ImGui::BeginTooltip();
+                    ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
+                    ImGui::TextUnformatted("In step-by-step mode, you can control the algorithm execution manually using the Step Forward and Step Backward buttons.");
+                    ImGui::PopTextWrapPos();
+                    ImGui::EndTooltip();
+                }
+            }
+        }
+
         // Start/Stop sorting button
         if (data.size() > 0) {
             if (!stats.isSorting && !stats.sortingComplete) {
@@ -36,6 +52,7 @@ namespace Rendering {
                     stats.comparisons = 0;
                     stats.swaps = 0;
                     stats.currentStep = 0;
+                    stats.history.clear();
                 }
             }
             else if (stats.isSorting) {
@@ -46,6 +63,40 @@ namespace Rendering {
             else if (stats.sortingComplete) {
                 if (ImGui::Button("Reset", ImVec2(200, 30))) {
                     stats.reset();
+                }
+            }
+            
+            // Step controls (only visible in stepping mode or when paused)
+            if (stats.steppingMode && !stats.isSorting && !stats.sortingComplete) {
+                ImGui::Separator();
+                ImGui::Text("Stepping Controls");
+                
+                // Step forward button
+                if (ImGui::Button("Step Forward", ImVec2(95, 30))) {
+                    stats.isSorting = true; // This will trigger one step and then pause again
+                }
+                
+                // Step backward button (only enabled if we have history)
+                ImGui::SameLine();
+                if (ImGui::Button("Step Backward", ImVec2(95, 30)) && stats.canStepBackward() && !stats.history.empty()) {
+                    // Get the previous state
+                    if (stats.currentStep > 0) {
+                        stats.currentStep--;
+                        
+                        // Pop the last state from history
+                        auto& prevState = stats.history.back();
+                        
+                        // Restore algorithm state
+                        stats.comparisons = prevState.comparisons;
+                        stats.swaps = prevState.swaps;
+                        
+                        // Restore array state
+                        auto& array = data.getArray();
+                        array = prevState.array;
+                        
+                        // Remove the state from history
+                        stats.history.pop_back();
+                    }
                 }
             }
         }
