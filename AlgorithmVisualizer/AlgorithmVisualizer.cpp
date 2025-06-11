@@ -82,6 +82,25 @@ int main()
 		// Render controls and check if we need to generate a new array
 		bool generateNewArray = renderer.renderControls(visualizationData, sortingStats, arraySize);
 
+		// Handle mode switching while sorting is in progress
+		static bool prevSteppingMode = sortingStats.steppingMode;
+		
+		// If we just switched to stepping mode while sorting was in progress,
+		// we need to stop the sorting thread and continue in stepping mode
+		if (sortingStats.steppingMode && !prevSteppingMode && sortingStats.isSorting && sortingThread.joinable()) {
+			sortingStats.isSorting = false;
+			sortingThread.join();
+			sortingStats.isSorting = true;
+		}
+		// If we just switched from stepping mode to continuous mode,
+		// we don't automatically start sorting - user needs to click Resume
+		else if (!sortingStats.steppingMode && prevSteppingMode && sortingStats.currentStep > 0) {
+			sortingStats.isSorting = false;
+		}
+		
+		// Update previous stepping mode for next frame
+		prevSteppingMode = sortingStats.steppingMode;
+
 		if (generateNewArray) {
 			Utils::ArrayGenerator::generateRandomArray(visualizationData);
 			sortingStats.reset();
@@ -92,12 +111,35 @@ int main()
 			sortingThread.join();
 		}
 
-		if (sortingStats.isSorting && !sortingThread.joinable()) {
-			sortingThread = std::thread(&Algorithms::BubbleSort::run, &bubbleSort,
-				std::ref(visualizationData), std::ref(sortingStats));
+		// Handle continuous sorting (non-stepping mode)
+		if (sortingStats.isSorting && !sortingStats.steppingMode && !sortingThread.joinable()) {
+			// If we have a current step, continue from where we left off rather than starting a new run
+			if (sortingStats.currentStep > 0) {
+				sortingThread = std::thread([&bubbleSort, &visualizationData, &sortingStats]() {
+					// Continue sorting from current state
+					while (sortingStats.isSorting && !sortingStats.sortingComplete) {
+						bubbleSort.step(visualizationData, sortingStats);
+						std::this_thread::sleep_for(std::chrono::milliseconds(sortingStats.speedFactor));
+					}
+					
+					visualizationData.resetHighlighting();
+					sortingStats.isSorting = false;
+				});
+			} else {
+				sortingThread = std::thread(&Algorithms::BubbleSort::run, &bubbleSort,
+					std::ref(visualizationData), std::ref(sortingStats));
+			}
 		}
 
-		if (sortingStats.isSorting && !sortingThread.joinable()) {
+		// Handle step-by-step execution
+		if (sortingStats.isSorting && sortingStats.steppingMode) {
+			bool previousSteppingMode = sortingStats.steppingMode;
+			sortingStats.steppingMode = true;
+			bubbleSort.step(visualizationData, sortingStats);
+			sortingStats.steppingMode = previousSteppingMode;
+		}
+		// Handle single-step execution when not in stepping mode
+		else if (sortingStats.isSorting && !sortingThread.joinable()) {
 			bubbleSort.step(visualizationData, sortingStats);
 			std::this_thread::sleep_for(std::chrono::milliseconds(sortingStats.speedFactor));
 		}

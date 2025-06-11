@@ -27,18 +27,55 @@ namespace Rendering {
         ImGui::Text("Execution Speed");
         ImGui::SliderInt("Delay (ms)", &stats.speedFactor, 1, 500, "%d ms");
 
-        // Start/Stop sorting button
-        if (data.size() > 0) {
-            if (!stats.isSorting && !stats.sortingComplete) {
-                if (ImGui::Button("Start Bubble Sort", ImVec2(200, 30))) {
-                    stats.isSorting = true;
-                    stats.sortingComplete = false;
-                    stats.comparisons = 0;
-                    stats.swaps = 0;
-                    stats.currentStep = 0;
+        // Execution mode checkbox
+        if (!stats.isSorting && !stats.sortingComplete) {
+            // Store previous stepping mode state
+            bool prevSteppingMode = stats.steppingMode;
+            
+            // Toggle stepping mode
+            ImGui::Checkbox("Step-by-Step Mode", &stats.steppingMode);
+            
+            // If we're exiting stepping mode, make sure we preserve the algorithm state
+            // but don't start sorting automatically
+            if (prevSteppingMode && !stats.steppingMode) {
+                stats.isSorting = false;
+            }
+            if (stats.steppingMode) {
+                ImGui::SameLine();
+                ImGui::TextDisabled("(?)");
+                if (ImGui::IsItemHovered()) {
+                    ImGui::BeginTooltip();
+                    ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
+                    ImGui::TextUnformatted("In step-by-step mode, you can control the algorithm execution manually using the Step Forward and Step Backward buttons.");
+                    ImGui::PopTextWrapPos();
+                    ImGui::EndTooltip();
                 }
             }
-            else if (stats.isSorting) {
+        }
+
+        // Start/Stop sorting button
+        if (data.size() > 0) {
+            if (!stats.isSorting && !stats.sortingComplete && stats.steppingMode == false) {
+                // If we have a currentStep > 0, show Resume button instead of Start
+                if (stats.currentStep > 0) {
+                    if (ImGui::Button("Resume Sorting", ImVec2(200, 30))) {
+                        stats.isSorting = true;
+                        stats.sortingComplete = false;
+                    }
+                } else {
+                    if (ImGui::Button("Start Bubble Sort", ImVec2(200, 30))) {
+                        stats.isSorting = true;
+                        stats.sortingComplete = false;
+                        
+                        if (stats.currentStep == 0) {
+                            stats.comparisons = 0;
+                            stats.swaps = 0;
+                            stats.history.clear();
+                        }
+                    }
+                }
+            }
+            else if (stats.isSorting && stats.steppingMode == false) {
                 if (ImGui::Button("Stop Sorting", ImVec2(200, 30))) {
                     stats.isSorting = false;
                 }
@@ -46,6 +83,59 @@ namespace Rendering {
             else if (stats.sortingComplete) {
                 if (ImGui::Button("Reset", ImVec2(200, 30))) {
                     stats.reset();
+                }
+            }
+            
+            // Step controls (only visible in stepping mode or when paused)
+            if (stats.steppingMode && !stats.isSorting && !stats.sortingComplete) {
+                ImGui::Separator();
+                ImGui::Text("Stepping Controls");
+                
+                // Step forward button
+                if (ImGui::Button("Step Forward", ImVec2(95, 30))) {
+                    stats.isSorting = true; // This will trigger one step and then pause again
+                }
+                
+                // Step backward button (only enabled if we have history)
+                ImGui::SameLine();
+                if (ImGui::Button("Step Backward", ImVec2(95, 30)) && stats.canStepBackward() && !stats.history.empty()) {
+                    // Get the previous state
+                    if (stats.currentStep > 0) {
+                        stats.currentStep--;
+                        
+                        // Pop the last state from history
+                        auto& prevState = stats.history.back();
+                        
+                        // Restore algorithm state
+                        stats.comparisons = prevState.comparisons;
+                        stats.swaps = prevState.swaps;
+                        
+                        // Restore array state with highlighting
+                        auto& array = data.getArray();
+                        array = prevState.array;
+                        
+                        // Explicitly set highlighting for the elements being compared
+                        // This ensures the highlighting is visible when stepping backward
+                        if (prevState.j < array.size() && prevState.j + 1 < array.size()) {
+                            array[prevState.j].isComparing = true;
+                            array[prevState.j + 1].isComparing = true;
+                            
+                            // If a swap occurred, also set the swapping flag
+                            if (prevState.swapped) {
+                                array[prevState.j].isSwapping = true;
+                                array[prevState.j + 1].isSwapping = true;
+                            }
+                        }
+                        
+                        // Store algorithm state variables for BubbleSort to retrieve
+                        stats.lastRestoredI = prevState.i;
+                        stats.lastRestoredJ = prevState.j;
+                        stats.lastRestoredSwapped = prevState.swapped;
+                        stats.stateRestored = true;
+                        
+                        // Remove the state from history
+                        stats.history.pop_back();
+                    }
                 }
             }
         }
