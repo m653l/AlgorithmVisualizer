@@ -142,6 +142,7 @@
     <ClCompile Include="AlgorithmVisualizer.cpp" />
     <ClCompile Include="ArrayGenerator.cpp" />
     <ClCompile Include="BubbleSort.cpp" />
+    <ClCompile Include="InsertionSort.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="SortingStats.cpp" />
     <ClCompile Include="VisualizationData.cpp" />
@@ -150,6 +151,7 @@
     <ClInclude Include="Algorithm.h" />
     <ClInclude Include="ArrayGenerator.h" />
     <ClInclude Include="BubbleSort.h" />
+    <ClInclude Include="InsertionSort.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="SortingStats.h" />
     <ClInclude Include="VisualizationData.h" />
