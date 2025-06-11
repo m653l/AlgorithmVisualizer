@@ -8,6 +8,7 @@
 
 #include "Renderer.h"
 #include "BubbleSort.h"
+#include "InsertionSort.h"
 #include "ArrayGenerator.h"
 
 #include <thread>
@@ -53,6 +54,17 @@ int main()
 	// Sorting thread
 	std::thread sortingThread;
 
+	// InsertionSort
+	Visualization::VisualizationData visualizationData2(100);
+	Algorithms::SortingStats sortingStats2;
+	Rendering::Renderer renderer2;
+	Algorithms::InsertionSort insertionSort;
+	int arraySize2 = 100;
+
+	Utils::ArrayGenerator::generateRandomArray(visualizationData2);
+
+	std::thread sortingThread2;
+
 	// Main loop
 	while (!glfwWindowShouldClose(window))
 	{
@@ -95,6 +107,35 @@ int main()
 
 		ImGui::End();
 
+		ImGui::Begin("InsertionSort", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+
+		bool generateNewArray2 = renderer2.renderControls(visualizationData2, sortingStats2, arraySize2);
+
+		if (generateNewArray2) {
+			Utils::ArrayGenerator::generateRandomArray(visualizationData2);
+			sortingStats2.reset();
+			insertionSort.reset();
+		}
+
+		if (!sortingStats2.isSorting && sortingThread2.joinable()) {
+			sortingThread2.join();
+		}
+
+		if (sortingStats2.isSorting && !sortingThread2.joinable()) {
+			sortingThread2 = std::thread(&Algorithms::InsertionSort::run, &insertionSort,
+				std::ref(visualizationData2), std::ref(sortingStats2));
+		}
+
+		if (sortingStats2.isSorting && !sortingThread2.joinable()) {
+			insertionSort.step(visualizationData2, sortingStats2);
+			std::this_thread::sleep_for(std::chrono::milliseconds(50));
+		}
+
+		renderer.renderStatistics(sortingStats2, visualizationData2.size());
+		renderer.renderArrayVisualization(visualizationData2, sortingStats2);
+
+		ImGui::End();
+
 		// Rendering
 		ImGui::Render();
 		int display_w, display_h;
@@ -113,6 +154,13 @@ int main()
 		sortingStats.isSorting = false;
 		if (sortingThread.joinable()) {
 			sortingThread.join();
+		}
+	}
+
+	if (sortingStats2.isSorting) {
+		sortingStats2.isSorting = false;
+		if (sortingThread2.joinable()) {
+			sortingThread2.join();
 		}
 	}
 
