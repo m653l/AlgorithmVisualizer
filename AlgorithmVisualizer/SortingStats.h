@@ -22,6 +22,12 @@ namespace Algorithms {
         int speedFactor = 50;
         bool steppingMode = false;
         
+        // Variables for state restoration when stepping backward
+        int lastRestoredI = 0;
+        int lastRestoredJ = 0;
+        bool lastRestoredSwapped = false;
+        bool stateRestored = false;
+        
         // History of algorithm states for stepping backward
         std::vector<AlgorithmState> history;
         
@@ -32,11 +38,24 @@ namespace Algorithms {
             isSorting = false;
             sortingComplete = false;
             steppingMode = false;
+            lastRestoredI = 0;
+            lastRestoredJ = 0;
+            lastRestoredSwapped = false;
+            stateRestored = false;
             history.clear();
         }
         
         // Save current state to history
         void saveState(const Visualization::VisualizationData& data, int i, int j, bool swapped) {
+            // Limit history size to prevent excessive memory usage
+            const size_t MAX_HISTORY_SIZE = 100;
+            
+            // If history is getting too large, remove oldest entries
+            if (history.size() >= MAX_HISTORY_SIZE) {
+                // Remove the oldest entry
+                history.erase(history.begin());
+            }
+            
             AlgorithmState state;
             state.i = i;
             state.j = j;

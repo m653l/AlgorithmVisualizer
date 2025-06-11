@@ -29,7 +29,17 @@ namespace Rendering {
 
         // Execution mode checkbox
         if (!stats.isSorting && !stats.sortingComplete) {
+            // Store previous stepping mode state
+            bool prevSteppingMode = stats.steppingMode;
+            
+            // Toggle stepping mode
             ImGui::Checkbox("Step-by-Step Mode", &stats.steppingMode);
+            
+            // If we're exiting stepping mode, make sure we preserve the algorithm state
+            // but don't start sorting automatically
+            if (prevSteppingMode && !stats.steppingMode) {
+                stats.isSorting = false;
+            }
             if (stats.steppingMode) {
                 ImGui::SameLine();
                 ImGui::TextDisabled("(?)");
@@ -45,17 +55,27 @@ namespace Rendering {
 
         // Start/Stop sorting button
         if (data.size() > 0) {
-            if (!stats.isSorting && !stats.sortingComplete) {
-                if (ImGui::Button("Start Bubble Sort", ImVec2(200, 30))) {
-                    stats.isSorting = true;
-                    stats.sortingComplete = false;
-                    stats.comparisons = 0;
-                    stats.swaps = 0;
-                    stats.currentStep = 0;
-                    stats.history.clear();
+            if (!stats.isSorting && !stats.sortingComplete && stats.steppingMode == false) {
+                // If we have a currentStep > 0, show Resume button instead of Start
+                if (stats.currentStep > 0) {
+                    if (ImGui::Button("Resume Sorting", ImVec2(200, 30))) {
+                        stats.isSorting = true;
+                        stats.sortingComplete = false;
+                    }
+                } else {
+                    if (ImGui::Button("Start Bubble Sort", ImVec2(200, 30))) {
+                        stats.isSorting = true;
+                        stats.sortingComplete = false;
+                        
+                        if (stats.currentStep == 0) {
+                            stats.comparisons = 0;
+                            stats.swaps = 0;
+                            stats.history.clear();
+                        }
+                    }
                 }
             }
-            else if (stats.isSorting) {
+            else if (stats.isSorting && stats.steppingMode == false) {
                 if (ImGui::Button("Stop Sorting", ImVec2(200, 30))) {
                     stats.isSorting = false;
                 }
@@ -90,9 +110,28 @@ namespace Rendering {
                         stats.comparisons = prevState.comparisons;
                         stats.swaps = prevState.swaps;
                         
-                        // Restore array state
+                        // Restore array state with highlighting
                         auto& array = data.getArray();
                         array = prevState.array;
+                        
+                        // Explicitly set highlighting for the elements being compared
+                        // This ensures the highlighting is visible when stepping backward
+                        if (prevState.j < array.size() && prevState.j + 1 < array.size()) {
+                            array[prevState.j].isComparing = true;
+                            array[prevState.j + 1].isComparing = true;
+                            
+                            // If a swap occurred, also set the swapping flag
+                            if (prevState.swapped) {
+                                array[prevState.j].isSwapping = true;
+                                array[prevState.j + 1].isSwapping = true;
+                            }
+                        }
+                        
+                        // Store algorithm state variables for BubbleSort to retrieve
+                        stats.lastRestoredI = prevState.i;
+                        stats.lastRestoredJ = prevState.j;
+                        stats.lastRestoredSwapped = prevState.swapped;
+                        stats.stateRestored = true;
                         
                         // Remove the state from history
                         stats.history.pop_back();
