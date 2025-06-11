@@ -7,6 +7,7 @@ namespace Algorithms {
         int currentStep = 0;
         bool isSorting = false;
         bool sortingComplete = false;
+        int speedFactor = 50;
 
         void reset() {
             comparisons = 0;

@@ -21,6 +21,11 @@ namespace Rendering {
 				generateNewArray = true;
             }
         }
+        
+        // Speed control slider
+        ImGui::Separator();
+        ImGui::Text("Execution Speed");
+        ImGui::SliderInt("Delay (ms)", &stats.speedFactor, 1, 500, "%d ms");
 
         // Start/Stop sorting button
         if (data.size() > 0) {
