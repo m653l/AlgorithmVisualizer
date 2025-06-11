@@ -21,11 +21,6 @@ namespace Rendering {
 				generateNewArray = true;
             }
         }
-        
-        // Speed control slider
-        ImGui::Separator();
-        ImGui::Text("Execution Speed");
-        ImGui::SliderInt("Delay (ms)", &stats.speedFactor, 1, 500, "%d ms");
 
         // Execution mode checkbox
         if (!stats.isSorting && !stats.sortingComplete) {
@@ -55,6 +50,14 @@ namespace Rendering {
 
         // Start/Stop sorting button
         if (data.size() > 0) {
+            if (stats.steppingMode == false && !stats.sortingComplete)
+            {
+                // Speed control slider
+                ImGui::Separator();
+                ImGui::Text("Execution Speed");
+                ImGui::SliderInt("Delay (ms)", &stats.speedFactor, 1, 500, "%d ms");
+            }
+
             if (!stats.isSorting && !stats.sortingComplete && stats.steppingMode == false) {
                 // If we have a currentStep > 0, show Resume button instead of Start
                 if (stats.currentStep > 0) {
