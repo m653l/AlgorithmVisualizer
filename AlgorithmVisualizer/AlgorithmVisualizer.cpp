@@ -87,7 +87,7 @@ int main()
 
 		if (sortingStats.isSorting && !sortingThread.joinable()) {
 			bubbleSort.step(visualizationData, sortingStats);
-			std::this_thread::sleep_for(std::chrono::milliseconds(50));
+			std::this_thread::sleep_for(std::chrono::milliseconds(sortingStats.speedFactor));
 		}
 
 		renderer.renderStatistics(sortingStats, visualizationData.size());
