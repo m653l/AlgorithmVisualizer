@@ -15,7 +15,22 @@ namespace Algorithms {
         auto& array = data.getArray();
         int n = array.size();
 
-        data.resetHighlighting();
+        // Check if we need to restore algorithm state after stepping backward
+        if (stats.stateRestored) {
+            i = stats.lastRestoredI;
+            j = stats.lastRestoredJ;
+            temp = array[j + 1].value; // Restore temp value from the array
+            stats.stateRestored = false;
+            
+            // Don't reset highlighting or save state when restoring
+            // The highlighting is already set in Renderer.cpp when stepping backward
+        } else {
+            // Only reset highlighting if we're not restoring a state
+            data.resetHighlighting();
+            
+            // Save current state before making changes (for step backward functionality)
+            stats.saveState(data, i, j, false); // InsertionSort doesn't use swapped flag
+        }
 
         if (i >= n) {
             stats.sortingComplete = true;
@@ -46,18 +61,30 @@ namespace Algorithms {
     }
 
     void InsertionSort::run(Visualization::VisualizationData& data, SortingStats& stats) {
-        reset();
-        stats.reset();
+        // Only reset if we're starting a new sort
+        if (stats.currentStep == 0) {
+            reset();
+            stats.reset();
+        }
         stats.isSorting = true;
 
+        // If in stepping mode, we'll only do one step at a time
+        if (stats.steppingMode) {
+            step(data, stats);
+            return;
+        }
+
+        // Normal continuous execution
         while (stats.isSorting && !stats.sortingComplete) {
             step(data, stats);
             std::this_thread::sleep_for(std::chrono::milliseconds(stats.speedFactor));
         }
 
         data.resetHighlighting();
-        stats.sortingComplete = true;
-        stats.isSorting = false;
+        if (stats.isSorting) {
+            stats.sortingComplete = true;
+            stats.isSorting = false;
+        }
     }
 
     bool InsertionSort::isComplete(const SortingStats& stats) const {

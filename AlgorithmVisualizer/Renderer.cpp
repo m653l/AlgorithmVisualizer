@@ -63,7 +63,7 @@ namespace Rendering {
                         stats.sortingComplete = false;
                     }
                 } else {
-                    if (ImGui::Button("Start Bubble Sort", ImVec2(200, 30))) {
+                    if (ImGui::Button("Start Sorting", ImVec2(200, 30))) {
                         stats.isSorting = true;
                         stats.sortingComplete = false;
                         

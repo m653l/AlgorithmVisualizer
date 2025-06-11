@@ -12,12 +12,105 @@
 #include "ArrayGenerator.h"
 
 #include <thread>
+#include <vector>
+#include <memory>
 
 static GLFWwindow* window = nullptr;
 
 static void GLFWErrorCallback(int error, const char* description)
 {
 	std::cout << "GLFW Error: " << description << " code: " << error << "\n";
+}
+
+// Structure to hold all components for a single algorithm visualization
+struct AlgorithmContext {
+    std::string name;
+    Visualization::VisualizationData visualizationData;
+    Algorithms::SortingStats sortingStats;
+    Rendering::Renderer renderer;
+    std::unique_ptr<Algorithms::Algorithm> algorithm;
+    std::thread sortingThread;
+    int arraySize;
+    bool prevSteppingMode;
+
+    AlgorithmContext(const std::string& name, int size, std::unique_ptr<Algorithms::Algorithm> algo)
+        : name(name),
+          visualizationData(size),
+          algorithm(std::move(algo)),
+          arraySize(size),
+          prevSteppingMode(false) {
+        // Generate initial random array
+        Utils::ArrayGenerator::generateRandomArray(visualizationData);
+    }
+};
+
+// Function to handle algorithm execution logic
+void handleAlgorithmExecution(AlgorithmContext& context) {
+    // Render controls and check if we need to generate a new array
+    bool generateNewArray = context.renderer.renderControls(context.visualizationData, context.sortingStats, context.arraySize);
+
+    // Handle mode switching while sorting is in progress
+    // If we just switched to stepping mode while sorting was in progress,
+    // we need to stop the sorting thread and continue in stepping mode
+    if (context.sortingStats.steppingMode && !context.prevSteppingMode && 
+        context.sortingStats.isSorting && context.sortingThread.joinable()) {
+        context.sortingStats.isSorting = false;
+        context.sortingThread.join();
+        context.sortingStats.isSorting = true;
+    }
+    // If we just switched from stepping mode to continuous mode,
+    // we don't automatically start sorting - user needs to click Resume
+    else if (!context.sortingStats.steppingMode && context.prevSteppingMode && context.sortingStats.currentStep > 0) {
+        context.sortingStats.isSorting = false;
+    }
+    
+    // Update previous stepping mode for next frame
+    context.prevSteppingMode = context.sortingStats.steppingMode;
+
+    if (generateNewArray) {
+        Utils::ArrayGenerator::generateRandomArray(context.visualizationData);
+        context.sortingStats.reset();
+        context.algorithm->reset();
+    }
+
+    if (!context.sortingStats.isSorting && context.sortingThread.joinable()) {
+        context.sortingThread.join();
+    }
+
+    // Handle continuous sorting (non-stepping mode)
+    if (context.sortingStats.isSorting && !context.sortingStats.steppingMode && 
+        !context.sortingThread.joinable()) {
+        // If we have a current step, continue from where we left off rather than starting a new run
+        if (context.sortingStats.currentStep > 0) {
+            context.sortingThread = std::thread([&context]() {
+                // Continue sorting from current state
+                while (context.sortingStats.isSorting && !context.sortingStats.sortingComplete) {
+                    context.algorithm->step(context.visualizationData, context.sortingStats);
+                    std::this_thread::sleep_for(std::chrono::milliseconds(context.sortingStats.speedFactor));
+                }
+                
+                context.visualizationData.resetHighlighting();
+                context.sortingStats.isSorting = false;
+            });
+        } else {
+            context.sortingThread = std::thread(&Algorithms::Algorithm::run, context.algorithm.get(),
+                std::ref(context.visualizationData), std::ref(context.sortingStats));
+        }
+    }
+
+    // Handle step-by-step execution
+    if (context.sortingStats.isSorting && context.sortingStats.steppingMode) {
+        bool previousSteppingMode = context.sortingStats.steppingMode;
+        context.sortingStats.steppingMode = true;
+        context.algorithm->step(context.visualizationData, context.sortingStats);
+        context.sortingStats.steppingMode = previousSteppingMode;
+        
+        // Ensure we stop after one step in stepping mode
+        context.sortingStats.isSorting = false;
+    }
+
+    context.renderer.renderStatistics(context.sortingStats, context.visualizationData.size());
+    context.renderer.renderArrayVisualization(context.visualizationData, context.sortingStats);
 }
 
 int main()
@@ -41,29 +134,14 @@ int main()
 
 	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
-	// Initialize visualization components
-	Visualization::VisualizationData visualizationData(100);
-	Algorithms::SortingStats sortingStats;
-	Rendering::Renderer renderer;
-	Algorithms::BubbleSort bubbleSort;
-	int arraySize = 100;
-
-	// Generate initial random array
-	Utils::ArrayGenerator::generateRandomArray(visualizationData);
-
-	// Sorting thread
-	std::thread sortingThread;
-
-	// InsertionSort
-	Visualization::VisualizationData visualizationData2(100);
-	Algorithms::SortingStats sortingStats2;
-	Rendering::Renderer renderer2;
-	Algorithms::InsertionSort insertionSort;
-	int arraySize2 = 100;
-
-	Utils::ArrayGenerator::generateRandomArray(visualizationData2);
-
-	std::thread sortingThread2;
+    // Create algorithm contexts
+    std::vector<AlgorithmContext> algorithms;
+    
+    // Add BubbleSort
+    algorithms.emplace_back("Bubble Sort", 100, std::make_unique<Algorithms::BubbleSort>());
+    
+    // Add InsertionSort
+    algorithms.emplace_back("Insertion Sort", 100, std::make_unique<Algorithms::InsertionSort>());
 
 	// Main loop
 	while (!glfwWindowShouldClose(window))
@@ -75,108 +153,16 @@ int main()
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 
-		// UI
-		// Create a window
-		ImGui::Begin("Sorting Algorithm Visualization", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
-
-		// Render controls and check if we need to generate a new array
-		bool generateNewArray = renderer.renderControls(visualizationData, sortingStats, arraySize);
-
-		// Handle mode switching while sorting is in progress
-		static bool prevSteppingMode = sortingStats.steppingMode;
-		
-		// If we just switched to stepping mode while sorting was in progress,
-		// we need to stop the sorting thread and continue in stepping mode
-		if (sortingStats.steppingMode && !prevSteppingMode && sortingStats.isSorting && sortingThread.joinable()) {
-			sortingStats.isSorting = false;
-			sortingThread.join();
-			sortingStats.isSorting = true;
-		}
-		// If we just switched from stepping mode to continuous mode,
-		// we don't automatically start sorting - user needs to click Resume
-		else if (!sortingStats.steppingMode && prevSteppingMode && sortingStats.currentStep > 0) {
-			sortingStats.isSorting = false;
-		}
-		
-		// Update previous stepping mode for next frame
-		prevSteppingMode = sortingStats.steppingMode;
-
-		if (generateNewArray) {
-			Utils::ArrayGenerator::generateRandomArray(visualizationData);
-			sortingStats.reset();
-			bubbleSort.reset();
-		}
-
-		if (!sortingStats.isSorting && sortingThread.joinable()) {
-			sortingThread.join();
-		}
-
-		// Handle continuous sorting (non-stepping mode)
-		if (sortingStats.isSorting && !sortingStats.steppingMode && !sortingThread.joinable()) {
-			// If we have a current step, continue from where we left off rather than starting a new run
-			if (sortingStats.currentStep > 0) {
-				sortingThread = std::thread([&bubbleSort, &visualizationData, &sortingStats]() {
-					// Continue sorting from current state
-					while (sortingStats.isSorting && !sortingStats.sortingComplete) {
-						bubbleSort.step(visualizationData, sortingStats);
-						std::this_thread::sleep_for(std::chrono::milliseconds(sortingStats.speedFactor));
-					}
-					
-					visualizationData.resetHighlighting();
-					sortingStats.isSorting = false;
-				});
-			} else {
-				sortingThread = std::thread(&Algorithms::BubbleSort::run, &bubbleSort,
-					std::ref(visualizationData), std::ref(sortingStats));
-			}
-		}
-
-		// Handle step-by-step execution
-		if (sortingStats.isSorting && sortingStats.steppingMode) {
-			bool previousSteppingMode = sortingStats.steppingMode;
-			sortingStats.steppingMode = true;
-			bubbleSort.step(visualizationData, sortingStats);
-			sortingStats.steppingMode = previousSteppingMode;
-		}
-		// Handle single-step execution when not in stepping mode
-		else if (sortingStats.isSorting && !sortingThread.joinable()) {
-			bubbleSort.step(visualizationData, sortingStats);
-			std::this_thread::sleep_for(std::chrono::milliseconds(sortingStats.speedFactor));
-		}
-
-		renderer.renderStatistics(sortingStats, visualizationData.size());
-		renderer.renderArrayVisualization(visualizationData, sortingStats);
-
-		ImGui::End();
-
-		ImGui::Begin("InsertionSort", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
-
-		bool generateNewArray2 = renderer2.renderControls(visualizationData2, sortingStats2, arraySize2);
-
-		if (generateNewArray2) {
-			Utils::ArrayGenerator::generateRandomArray(visualizationData2);
-			sortingStats2.reset();
-			insertionSort.reset();
-		}
-
-		if (!sortingStats2.isSorting && sortingThread2.joinable()) {
-			sortingThread2.join();
-		}
-
-		if (sortingStats2.isSorting && !sortingThread2.joinable()) {
-			sortingThread2 = std::thread(&Algorithms::InsertionSort::run, &insertionSort,
-				std::ref(visualizationData2), std::ref(sortingStats2));
-		}
-
-		if (sortingStats2.isSorting && !sortingThread2.joinable()) {
-			insertionSort.step(visualizationData2, sortingStats2);
-			std::this_thread::sleep_for(std::chrono::milliseconds(sortingStats2.speedFactor));
-		}
-
-		renderer.renderStatistics(sortingStats2, visualizationData2.size());
-		renderer.renderArrayVisualization(visualizationData2, sortingStats2);
-
-		ImGui::End();
+        // Process each algorithm
+        for (auto& context : algorithms) {
+            // Create a window for this algorithm
+            ImGui::Begin(context.name.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+            
+            // Handle algorithm execution
+            handleAlgorithmExecution(context);
+            
+            ImGui::End();
+        }
 
 		// Rendering
 		ImGui::Render();
@@ -192,19 +178,15 @@ int main()
 		glfwSwapBuffers(window);
 	}
 	
-	if (sortingStats.isSorting) {
-		sortingStats.isSorting = false;
-		if (sortingThread.joinable()) {
-			sortingThread.join();
-		}
-	}
-
-	if (sortingStats2.isSorting) {
-		sortingStats2.isSorting = false;
-		if (sortingThread2.joinable()) {
-			sortingThread2.join();
-		}
-	}
+    // Clean up all algorithm threads
+    for (auto& context : algorithms) {
+        if (context.sortingStats.isSorting) {
+            context.sortingStats.isSorting = false;
+            if (context.sortingThread.joinable()) {
+                context.sortingThread.join();
+            }
+        }
+    }
 
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
