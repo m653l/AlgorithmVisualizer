@@ -7,7 +7,7 @@ namespace Algorithms {
     public:
         MergeSort();
 
-        void step(Visualization::VisualizationData& data, SortingStats& stats) override;
+        void step(Visualization::VisualizationData&, SortingStats&) override {} // brak trybu krokowego
         void run(Visualization::VisualizationData& data, SortingStats& stats) override;
         bool isComplete(const SortingStats& stats) const override;
         void reset() override;
@@ -15,9 +15,7 @@ namespace Algorithms {
     private:
         void mergeSort(Visualization::VisualizationData& data, SortingStats& stats, int left, int right);
         void merge(Visualization::VisualizationData& data, SortingStats& stats, int left, int mid, int right);
-
         bool completed = false;
-        bool running = false;
     };
 
 }
