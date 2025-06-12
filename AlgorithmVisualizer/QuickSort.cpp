@@ -81,6 +81,7 @@ namespace Algorithms {
             partitioning = true;
             
             stats.currentStep++;
+            stats.comparisons++;
         }
         // If the range has 0 or 1 element, it's already sorted, continue to next range
         // This prevents infinite loops !!!
@@ -100,12 +101,14 @@ namespace Algorithms {
             
             array[j].isComparing = true;
             array[pivotIndex].isComparing = true;
+            
             stats.comparisons++;
             stats.currentStep++;
             
             // If current element is smaller than or equal to pivot
             if (array[j].value <= array[pivotIndex].value) {
                 i++;
+                
                 if (i != j) {
                     array[i].isSwapping = true;
                     array[j].isSwapping = true;
@@ -127,14 +130,17 @@ namespace Algorithms {
                 array[pivotIndex].isSwapping = true;
                 std::swap(array[i + 1], array[pivotIndex]);
                 stats.swaps++;
+                stats.currentStep++;
             }
             
             data.resetHighlighting();
             
             int pivotPos = i + 1;
+            
             if (pivotPos - 1 > currentLow) {
                 sortStack.push({currentLow, pivotPos - 1});
             }
+            
             if (pivotPos + 1 < currentHigh) {
                 sortStack.push({pivotPos + 1, currentHigh});
             }
@@ -156,6 +162,8 @@ namespace Algorithms {
         auto& array = data.getArray();
         int pivot = array[high].value;
         int i = low - 1;
+        
+        stats.comparisons++;
         
         for (int j = low; j < high; j++) {
             if (!stats.isSorting) break;
@@ -184,6 +192,7 @@ namespace Algorithms {
             array[high].isSwapping = true;
             std::swap(array[i + 1], array[high]);
             stats.swaps++;
+            stats.currentStep++;
         }
         
         return i + 1;
