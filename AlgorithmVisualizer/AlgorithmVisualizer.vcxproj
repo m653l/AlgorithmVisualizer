@@ -145,6 +145,7 @@
     <ClCompile Include="InsertionSort.cpp" />
     <ClCompile Include="MergeSort.cpp" />
     <ClCompile Include="QuickSort.cpp" />
+    <ClCompile Include="BucketSort.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="SortingStats.cpp" />
     <ClCompile Include="VisualizationData.cpp" />
@@ -156,6 +157,7 @@
     <ClInclude Include="InsertionSort.h" />
     <ClInclude Include="MergeSort.h" />
     <ClInclude Include="QuickSort.h" />
+    <ClInclude Include="BucketSort.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="SortingStats.h" />
     <ClInclude Include="VisualizationData.h" />

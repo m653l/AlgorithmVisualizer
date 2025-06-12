@@ -77,10 +77,14 @@ namespace Algorithms {
             temp.push_back(array[j++]);
         }
 
+        stats.currentStep++;
+     
         for (int k = 0; k < temp.size(); ++k) {
+            if (array[left + k].value != temp[k].value) {
+                array[left + k].isSwapping = true;
+                stats.swaps++;
+            }
             array[left + k] = temp[k];
-            array[left + k].isSwapping = true;
-            stats.swaps++;
         }
 
         std::this_thread::sleep_for(std::chrono::milliseconds(stats.speedFactor));

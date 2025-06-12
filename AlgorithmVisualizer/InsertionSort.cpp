@@ -50,10 +50,14 @@ namespace Algorithms {
             array[j].isSwapping = true;
             array[j + 1].isSwapping = true;
             stats.comparisons++;
+            stats.swaps++;
             stats.currentStep++;
             array[j + 1] = array[j];
             j--;
         } else {
+            if (j + 1 != i - 1) {
+                stats.swaps++;
+            }
             array[j + 1].value = temp;
             j = i - 1;
         }

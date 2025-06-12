@@ -11,6 +11,7 @@
 #include "InsertionSort.h"
 #include "MergeSort.h"
 #include "QuickSort.h"
+#include "BucketSort.h"
 #include "ArrayGenerator.h"
 
 #include <thread>
@@ -150,6 +151,9 @@ int main()
 
     // Add QuickSort
     algorithms.emplace_back("Quick Sort", 100, std::make_unique<Algorithms::QuickSort>());
+
+    // Add BucketSort
+    algorithms.emplace_back("Bucket Sort", 100, std::make_unique<Algorithms::BucketSort>());
 
 	// Main loop
 	while (!glfwWindowShouldClose(window))

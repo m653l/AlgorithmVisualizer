@@ -16,7 +16,7 @@ namespace Rendering {
                 data.resize(arraySize);
 				generateNewArray = true;
             }
-
+            
             if (ImGui::Button("Generate New Array", ImVec2(200, 30))) {
 				generateNewArray = true;
             }
