@@ -2,21 +2,22 @@
 #include "Algorithm.h"
 
 namespace Algorithms {
-	class MergeSort : public Algorithm
-	{
-	public:
-		MergeSort();
 
-		void step(Visualization::VisualizationData& data, SortingStats& stats) override;
+    class MergeSort : public Algorithm {
+    public:
+        MergeSort();
 
-		void run(Visualization::VisualizationData& data, SortingStats& stats) override;
+        void step(Visualization::VisualizationData& data, SortingStats& stats) override;
+        void run(Visualization::VisualizationData& data, SortingStats& stats) override;
+        bool isComplete(const SortingStats& stats) const override;
+        void reset() override;
 
-		bool isComplete(const SortingStats& stats) const override;
+    private:
+        void mergeSort(Visualization::VisualizationData& data, SortingStats& stats, int left, int right);
+        void merge(Visualization::VisualizationData& data, SortingStats& stats, int left, int mid, int right);
 
-		void reset() override;
+        bool completed = false;
+        bool running = false;
+    };
 
-	private:
-		int i, j, temp = 0;
-	};
 }
-

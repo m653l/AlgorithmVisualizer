@@ -9,6 +9,7 @@
 #include "Renderer.h"
 #include "BubbleSort.h"
 #include "InsertionSort.h"
+#include "MergeSort.h"
 #include "ArrayGenerator.h"
 
 #include <thread>
@@ -142,6 +143,10 @@ int main()
     
     // Add InsertionSort
     algorithms.emplace_back("Insertion Sort", 100, std::make_unique<Algorithms::InsertionSort>());
+
+    // Add MergeSort
+    algorithms.emplace_back("Merge Sort", 100, std::make_unique<Algorithms::MergeSort>());
+
 
 	// Main loop
 	while (!glfwWindowShouldClose(window))
