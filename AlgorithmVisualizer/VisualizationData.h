@@ -22,7 +22,8 @@ namespace Visualization {
 
         void resize(int newSize);
 
-    private:
+        char buf[256]{};
+        char buf1[256]{};
         std::vector<ArrayElement> array;
     };
 

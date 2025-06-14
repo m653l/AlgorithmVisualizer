@@ -1,12 +1,18 @@
+#define _CRT_SECURE_NO_WARNINGS
 #include "Renderer.h"
-
+#include <cstring>
+#include <fstream>
+#include <sstream>
+#include <string>
 namespace Rendering {
+
+
 
     Renderer::Renderer() {}
 
     bool Renderer::renderControls(Visualization::VisualizationData& data, Algorithms::SortingStats& stats, int& arraySize, bool isStepsEnable) {
         bool generateNewArray = false;
-
+        
         ImGui::Text("Sorting Algorithm Controls");
         ImGui::Separator();
 
@@ -20,8 +26,62 @@ namespace Rendering {
             if (ImGui::Button("Generate New Array", ImVec2(200, 30))) {
 				generateNewArray = true;
             }
-        }
+           
+        
+        ImGui::InputText("##Num", data.buf, 256);
+        if (ImGui::Button("Enter", ImVec2(200, 30))) {
+            // 1. Wyczyœæ star¹ tablicê przed dodaniem nowych elementów
+            
+            data.array.clear();
+            
+            // 2. Pierwsze wywo³anie strtok
+            char* token = std::strtok(data.buf, " ");
 
+            while (token != nullptr) {
+                Visualization::ArrayElement elem{ std::atoi(token), false, false };
+                data.array.push_back(elem);
+
+                // 3. Pobierz NASTÊPNY token (brakowa³o tej linii)
+                token = std::strtok(NULL, " ");
+            }
+        }
+        
+        ImGui::InputText("##Path", data.buf1, 256);
+        if (ImGui::Button("Input", ImVec2(200, 30))) {
+            data.array.clear();
+
+            std::ifstream file(data.buf1);
+            std::string line;
+
+            if (file.is_open()) {
+                while (std::getline(file, line)) {
+                    std::stringstream strstream(line);
+                    std::string value;
+                    while (std::getline(strstream, value, ' ')) {
+                        const char* v1 = value.c_str();
+                        Visualization::ArrayElement elem{ std::atoi(v1), false, false };
+                        data.array.push_back(elem);
+                    }
+                }
+                file.close();
+            }
+            else {
+                // B£¥D: Plik siê nie otworzy³. Otwieramy nasz popup.
+                ImGui::OpenPopup("File Error");
+            }
+        }
+        if (ImGui::BeginPopupModal("File Error", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+            ImGui::Text("Error: Could not open the file.\nPlease check the path and try again.");
+            ImGui::Separator();
+
+            // Przycisk do zamkniêcia okienka
+            if (ImGui::Button("OK", ImVec2(120, 0))) {
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
+
+        }
+        }
         // Execution mode checkbox
         if (!stats.isSorting && !stats.sortingComplete && isStepsEnable) {
             // Store previous stepping mode state
