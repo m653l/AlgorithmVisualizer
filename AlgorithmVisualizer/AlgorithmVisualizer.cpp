@@ -35,12 +35,14 @@ struct AlgorithmContext {
     std::thread sortingThread;
     int arraySize;
     bool prevSteppingMode;
+    bool isStepsEnable;
 
-    AlgorithmContext(const std::string& name, int size, std::unique_ptr<Algorithms::Algorithm> algo)
+    AlgorithmContext(const std::string& name, int size, std::unique_ptr<Algorithms::Algorithm> algo, bool isStepsEnable)
         : name(name),
           visualizationData(size),
           algorithm(std::move(algo)),
           arraySize(size),
+          isStepsEnable(isStepsEnable),
           prevSteppingMode(false) {
         // Generate initial random array
         Utils::ArrayGenerator::generateRandomArray(visualizationData);
@@ -50,7 +52,7 @@ struct AlgorithmContext {
 // Function to handle algorithm execution logic
 void handleAlgorithmExecution(AlgorithmContext& context) {
     // Render controls and check if we need to generate a new array
-    bool generateNewArray = context.renderer.renderControls(context.visualizationData, context.sortingStats, context.arraySize);
+    bool generateNewArray = context.renderer.renderControls(context.visualizationData, context.sortingStats, context.arraySize, context.isStepsEnable);
 
     // Handle mode switching while sorting is in progress
     // If we just switched to stepping mode while sorting was in progress,
@@ -141,19 +143,19 @@ int main()
     std::vector<AlgorithmContext> algorithms;
     
     // Add BubbleSort
-    algorithms.emplace_back("Bubble Sort", 100, std::make_unique<Algorithms::BubbleSort>());
+    algorithms.emplace_back("Bubble Sort", 100, std::make_unique<Algorithms::BubbleSort>(), true);
     
     // Add InsertionSort
-    algorithms.emplace_back("Insertion Sort", 100, std::make_unique<Algorithms::InsertionSort>());
+    algorithms.emplace_back("Insertion Sort", 100, std::make_unique<Algorithms::InsertionSort>(), true);
 
     // Add MergeSort
-    algorithms.emplace_back("Merge Sort", 100, std::make_unique<Algorithms::MergeSort>());
+    algorithms.emplace_back("Merge Sort", 100, std::make_unique<Algorithms::MergeSort>(), false);
 
     // Add QuickSort
-    algorithms.emplace_back("Quick Sort", 100, std::make_unique<Algorithms::QuickSort>());
+    algorithms.emplace_back("Quick Sort", 100, std::make_unique<Algorithms::QuickSort>(), true);
 
     // Add BucketSort
-    algorithms.emplace_back("Bucket Sort", 100, std::make_unique<Algorithms::BucketSort>());
+    algorithms.emplace_back("Bucket Sort", 100, std::make_unique<Algorithms::BucketSort>(), true);
 
 	// Main loop
 	while (!glfwWindowShouldClose(window))

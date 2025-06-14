@@ -9,7 +9,7 @@ namespace Rendering {
     public:
         Renderer();
 
-        bool renderControls(Visualization::VisualizationData& data, Algorithms::SortingStats& stats, int& arraySize);
+        bool renderControls(Visualization::VisualizationData& data, Algorithms::SortingStats& stats, int& arraySize, bool isStepsEnable);
 
         void renderArrayVisualization(const Visualization::VisualizationData& data, const Algorithms::SortingStats& stats);
 
