@@ -4,7 +4,7 @@ namespace Rendering {
 
     Renderer::Renderer() {}
 
-    bool Renderer::renderControls(Visualization::VisualizationData& data, Algorithms::SortingStats& stats, int& arraySize) {
+    bool Renderer::renderControls(Visualization::VisualizationData& data, Algorithms::SortingStats& stats, int& arraySize, bool isStepsEnable) {
         bool generateNewArray = false;
 
         ImGui::Text("Sorting Algorithm Controls");
@@ -23,7 +23,7 @@ namespace Rendering {
         }
 
         // Execution mode checkbox
-        if (!stats.isSorting && !stats.sortingComplete) {
+        if (!stats.isSorting && !stats.sortingComplete && isStepsEnable) {
             // Store previous stepping mode state
             bool prevSteppingMode = stats.steppingMode;
             
