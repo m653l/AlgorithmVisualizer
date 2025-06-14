@@ -4,9 +4,8 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+
 namespace Rendering {
-
-
 
     Renderer::Renderer() {}
 
@@ -28,59 +27,59 @@ namespace Rendering {
             }
            
         
-        ImGui::InputText("##Num", data.buf, 256);
-        if (ImGui::Button("Enter", ImVec2(200, 30))) {
-            // 1. Wyczyœæ star¹ tablicê przed dodaniem nowych elementów
-            
-            data.array.clear();
-            
-            // 2. Pierwsze wywo³anie strtok
-            char* token = std::strtok(data.buf, " ");
+            ImGui::InputTextWithHint("##Num", "Enter numbers separated by spaces (e.g., 5 3 8 1 9)", data.buf, 256);
+            if (ImGui::Button("Enter", ImVec2(200, 30))) {
+                if (strlen(data.buf) > 0) {
+                    data.array.clear();
+                    
+                    char bufCopy[256];
+                    strcpy(bufCopy, data.buf);
+                    
+                    char* token = std::strtok(bufCopy, " ");
 
-            while (token != nullptr) {
-                Visualization::ArrayElement elem{ std::atoi(token), false, false };
-                data.array.push_back(elem);
-
-                // 3. Pobierz NASTÊPNY token (brakowa³o tej linii)
-                token = std::strtok(NULL, " ");
-            }
-        }
-        
-        ImGui::InputText("##Path", data.buf1, 256);
-        if (ImGui::Button("Input", ImVec2(200, 30))) {
-            data.array.clear();
-
-            std::ifstream file(data.buf1);
-            std::string line;
-
-            if (file.is_open()) {
-                while (std::getline(file, line)) {
-                    std::stringstream strstream(line);
-                    std::string value;
-                    while (std::getline(strstream, value, ' ')) {
-                        const char* v1 = value.c_str();
-                        Visualization::ArrayElement elem{ std::atoi(v1), false, false };
+                    while (token != nullptr) {
+                        Visualization::ArrayElement elem{ std::atoi(token), false, false };
                         data.array.push_back(elem);
+
+                        token = std::strtok(NULL, " ");
                     }
                 }
-                file.close();
             }
-            else {
-                // B£¥D: Plik siê nie otworzy³. Otwieramy nasz popup.
-                ImGui::OpenPopup("File Error");
-            }
-        }
-        if (ImGui::BeginPopupModal("File Error", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
-            ImGui::Text("Error: Could not open the file.\nPlease check the path and try again.");
-            ImGui::Separator();
+        
+            ImGui::InputTextWithHint("##Path", "Enter CSV file path (e.g., C:\\data\\numbers.csv)", data.buf1, 256);
+            if (ImGui::Button("Input", ImVec2(200, 30))) {
+                std::ifstream file(data.buf1);
+                std::string line;
 
-            // Przycisk do zamkniêcia okienka
-            if (ImGui::Button("OK", ImVec2(120, 0))) {
-                ImGui::CloseCurrentPopup();
+                if (file.is_open()) {
+                    data.array.clear();
+                
+                    while (std::getline(file, line)) {
+                        std::stringstream strstream(line);
+                        std::string value;
+                        while (std::getline(strstream, value, ' ')) {
+                            const char* v1 = value.c_str();
+                            Visualization::ArrayElement elem{ std::atoi(v1), false, false };
+                            data.array.push_back(elem);
+                        }
+                    }
+                    file.close();
+                }
+                else {
+                    ImGui::OpenPopup("File Error");
+                }
             }
-            ImGui::EndPopup();
 
-        }
+            if (ImGui::BeginPopupModal("File Error", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+                ImGui::Text("Error: Could not open the file.\nPlease check the path and try again.");
+                ImGui::Separator();
+
+                if (ImGui::Button("OK", ImVec2(120, 0))) {
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::EndPopup();
+
+            }
         }
         // Execution mode checkbox
         if (!stats.isSorting && !stats.sortingComplete && isStepsEnable) {
